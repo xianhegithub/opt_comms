@@ -1,0 +1,2 @@
+# how to update an environment with a yml file
+conda env update --file env_opt_comms.yml  --prune
