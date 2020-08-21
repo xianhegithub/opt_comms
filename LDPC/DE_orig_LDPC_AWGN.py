@@ -37,7 +37,9 @@ def de_reg_ldpc_awgn_orig(pc_0, itermax, m_sup, z_sup, pe_th, dv, dc):
         pe_curr = pv[:int(round((m_sup[2] - 1) / 2 + 1))].sum() * m_inc
         print(pe_curr)
 
-    return pe_res[1:ll+1]
+    pe_res[ll] = pe_curr
+
+    return pe_res[:ll+1]
 
 
 def de_irreg_ldpc_awgn_orig():

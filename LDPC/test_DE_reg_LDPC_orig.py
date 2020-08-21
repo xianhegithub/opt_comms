@@ -12,13 +12,18 @@ Pe_th = 1e-6
 dv = 3
 dc = 6
 ll = 0
-sigma = 0.8
+sigma = 0.6
 m_sup = [-30, 30, 6001]
 z_sup = [-10, -2e-4, 50000]
 
 pc_0, __ = ch_msg(m_sup, sigma)
 pe_res = de_reg_ldpc_awgn_orig(pc_0, iter_max, m_sup, z_sup, Pe_th, dv, dc)
 
-plt.plot(pe_res)
+plt.subplot(111)
+plt.semilogy(pe_res[1:])
+plt.title('Density Evolution')
+plt.grid(True)
+plt.xlabel("Iteration")
+plt.ylabel("Error Probability")
 plt.show()
 
