@@ -8,21 +8,36 @@ irregular LDPC code in AWGN channel.
 
 
 def de_reg_ldpc_awgn_orig(pc_0, itermax, m_sup, z_sup, pe_th, dv, dc):
-
+    """
+    This function runs the original density evolution for regular LDPC code ensemble in AWGN channel.
+    Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 and Example 9.2
+    :param pc_0: pdf of the message from the channel
+    :param itermax: maximum number of iterations for the density evolution
+    :param m_sup: vector that generate the grid of m value, m stands for the message passed between nodes.
+    m_sup is of form [m_min, m_max, num_ele].
+    :param z_sup: vector that generate the grid of z value, z is the phi transform of m.
+    z_sup is of form [z_min, z_max, num_ele].
+    :param pe_th: the threshold of error probability
+    :param dv: variable node degree
+    :param dc: check node degree
+    :return pe_res: error probability at each iteration above the threshold
+    """
     pv = pc_0
     ll = 0
     pe_curr = 0.5
     m_inc = (m_sup[1] - m_sup[0]) / (m_sup[2] - 1)
+    pe_res = np.zeros(itermax)
 
     while ll < itermax and pe_curr > pe_th:
 
+        pe_res[ll] = pe_curr
         ll = ll + 1
         pc = cn_update(m_sup, pv, dc - 1, z_sup)
         pv = vn_update(pc_0, pc, dv - 1, m_sup, m_sup)
         pe_curr = pv[:int(round((m_sup[2] - 1) / 2 + 1))].sum() * m_inc
         print(pe_curr)
 
-    return 0
+    return pe_res[1:ll+1]
 
 
 def de_irreg_ldpc_awgn_orig():
@@ -46,7 +61,17 @@ def ch_msg(m_sup, sigma):
 
 
 def cn_update(m_sup, pv, dcm1, z_sup):
-
+    """
+    This function updates the check nodes pdf in density evolution.
+    :param m_sup: vector that generate the grid of m value, m stands for the message passed between nodes.
+    m_sup is of form [m_min, m_max, num_ele].
+    :param pv: pdf of variable check nodes
+    :param dcm1: check node degree minus 1, i.e., dc - 1
+    :param z_sup: vector that generate the grid of z value, z is the phi transform of m.
+    z_sup is of form [z_min, z_max, num_ele].
+    :return pm_update: p^{(c)} in Algorithm 9.1 step 3 [1]
+    Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 step 3
+    """
     m_inc = (m_sup[1] - m_sup[0]) / (m_sup[2] - 1)
     z_inc = (z_sup[1] - z_sup[0]) / (z_sup[2] - 1)
 
@@ -78,9 +103,11 @@ def phi_trans(m_sup, pv, z_sup):
     note, the zero is dropped! ... but not the underflow
     :param m_sup: vector that generate the grid of m value, m stands for the
     message passed between nodes. m_sup is of form [m_min, m_max, num_ele]
-    :param pv:
-    :param z_sup:
-    :return:
+    :param pv: pdf of variable nodes
+    :param z_sup: vector that generate the grid of z value, z is the phi transform of m.
+    z_sup is of form [z_min, z_max, num_ele].
+    :return p0_zi, p1_zi:
+    Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 step 3, sub-step 1
     """
 
     z_uni_grid = np.linspace(z_sup[0], z_sup[1], z_sup[2])
@@ -116,6 +143,19 @@ def phi_trans(m_sup, pv, z_sup):
 
 
 def phi_trans_inv(pomg_pos, pomg_neg, p_res_zero, z_extn_sup, m_sup):
+    """
+    converts a log(tanh(L/2)) form random variable to LLR
+    recall that sign information is preserved
+    :param pomg_pos: p(\omega) z>0
+    :param pomg_neg: p(\omega) z<0
+    :param p_res_zero: probability density of z = 0
+    :param z_extn_sup: vector that generate the EXTENDED grid of z value due to convolution,
+    zzextn_sup is of form [z_min, z_max, num_ele].
+    :param m_sup: vector that generate the grid of m value, m stands for the
+    message passed between nodes. m_sup is of form [m_min, m_max, num_ele]
+    :return:
+    Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 step 3, sub-step 3
+    """
 
     m_inc = (m_sup[1] - m_sup[0]) / (m_sup[2] - 1)
     m_pos_min = m_inc
@@ -230,13 +270,13 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
 def cn_fft_convolve(p0_zi, p1_zi, dcm1, z_extn_sup, excess, p_zero):
     """
     perform FFTs over R x GF(2) to obtain probabilities with sign information
-    I will *assume* that the range of f_log_pos and f_log_neg are over the range
-    min:increment:-increment, with min*increment elements
+    I will *assume* that the range of p0_zi and p1_zi are over the range
+    z_extn_sup
 
-    the input ofl_pos is the probability of the input "flog" message
+    the input ofl_pos is the probability of the input "p(z)" message
     being zero ... can directly include this in the sum
 
-    furthermore, by the symmetry property, "flog" can only be zero
+    furthermore, by the symmetry property, "p(z)" can only be zero
     if the sign is positive
 
     find the probabilities of being positive or negative ... used in calculating the
@@ -249,6 +289,7 @@ def cn_fft_convolve(p0_zi, p1_zi, dcm1, z_extn_sup, excess, p_zero):
     :param excess:
     :param p_zero:
     :return:
+    Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 step 3, sub-step 2
     """
 
     z_extn_inc = (z_extn_sup[1] - z_extn_sup[0])/(z_extn_sup[2] - 1)
@@ -326,6 +367,10 @@ def cn_fft_convolve(p0_zi, p1_zi, dcm1, z_extn_sup, excess, p_zero):
 
 
 def cn_overflow(pm_update, ofl_pos, ofl_neg, m_sup, z_sup):
+    """
+    delicate handling of overflow of p0_zi and p1_zi
+    :return:
+    """
 
     m_inc = (m_sup[1] - m_sup[0]) / (m_sup[2] - 1)
     z_inc = (z_sup[1] - z_sup[0]) / (z_sup[2] - 1)
@@ -347,6 +392,16 @@ def cn_overflow(pm_update, ofl_pos, ofl_neg, m_sup, z_sup):
 
 
 def vn_update(pc0, pc, dvm1, pc0_sup, m_sup):
+    """
+    This function updates the variable nodes pdf in density evolution.
+    :param pc0: pdf of the message from the channel
+    :param pc: pdf of check nodes
+    :param dvm1: variable node degree minus one, i.e., dv - 1
+    :param pc0_sup:
+    :param m_sup:
+    :return:
+    Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 step 4
+    """
 
     sc = len(pc0)
     sf = len(pc)
