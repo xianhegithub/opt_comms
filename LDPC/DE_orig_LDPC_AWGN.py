@@ -47,7 +47,7 @@ def de_irreg_ldpc_awgn_orig(pc_0, itermax, m_sup, z_sup, pe_th, lmbda, rho):
     pv_aver = pc_0
     ll = 0
     pe_curr = 0.5
-    m_inc = (m_sup[1] - m_sup[0]) / (m_sup[2] - 1)
+    m_inc = (m_sup[1] - m_sup[0])/(m_sup[2] - 1)
     pe_res = np.zeros(itermax)
     max_dv = len(lmbda)
     max_dc = len(rho)
@@ -153,9 +153,8 @@ def phi_trans(m_sup, pv, z_sup):
     lw_up_grid[0, 0] = m_inc
     lw_up_grid[1, -1] = m_inc * (m_sup[2]-3)/2 + m_inc
 
-    z_non_grid = np.log(np.tanh(np.divide(lw_up_grid, 2)))
-    coeff = np.divide(np.multiply(2, np.exp(z_uni_grid)),
-                      np.subtract(1, np.exp(np.multiply(2, z_uni_grid))))
+    z_non_grid = np.log(np.tanh(lw_up_grid/2))
+    coeff = 2 * np.exp(z_uni_grid)/(1 - np.exp(2 * z_uni_grid))
 
     excess = np.zeros(4)
     pv_pos = pv[int((m_sup[2]-1)/2)+1:]
@@ -235,8 +234,7 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
     min_res_bin = z_sup[0] - 0.5 * z_inc
     max_res_bin = z_sup[1] + 0.5 * z_inc
     for cc in range(itmax):
-        z_in_z_uni = np.round(np.divide(np.subtract(z_non_grid[:, cc], z_sup[0]), z_inc))
-        z_in_z_uni = z_in_z_uni.astype(int)
+        z_in_z_uni = np.round(np.divide(np.subtract(z_non_grid[:, cc], z_sup[0]), z_inc)).astype(int)
         flag = 0
         partflag = 0
         # higher range exceeded by both, this part of pv is added into ofl

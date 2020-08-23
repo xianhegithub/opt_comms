@@ -1,6 +1,9 @@
 """
 This script runs the original density evolution for irregular LDPC code ensemble in AWGN channel.
 Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 and Example 9.2
+[2] Analysis of Sum-Product Decoding of Low-Density Parity-Check Codes Using a Gaussian Approximation --
+Sae-Young Chung et al. (17)
+This needs more testing. The testing of the example in [2] has failed. Not clear why.
 """
 import matplotlib.pyplot as plt
 from DE_orig_LDPC_AWGN import *
@@ -22,7 +25,7 @@ rho[8] = 0.28125
 ll = 0
 ebn0_db = 0.627
 ebn0 = 10 ** (ebn0_db/10)
-sigma = 0.96#np.sqrt(1/ebn0)
+sigma = 0.8#np.sqrt(1/ebn0)
 m_sup = [-30, 30, 6001]
 z_sup = [-10, -2e-4, 50000]
 
