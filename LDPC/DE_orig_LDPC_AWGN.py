@@ -42,9 +42,37 @@ def de_reg_ldpc_awgn_orig(pc_0, itermax, m_sup, z_sup, pe_th, dv, dc):
     return pe_res[:ll+1]
 
 
-def de_irreg_ldpc_awgn_orig():
+def de_irreg_ldpc_awgn_orig(pc_0, itermax, m_sup, z_sup, pe_th, lmbda, rho):
 
-    return
+    pv_aver = pc_0
+    ll = 0
+    pe_curr = 0.5
+    m_inc = (m_sup[1] - m_sup[0]) / (m_sup[2] - 1)
+    pe_res = np.zeros(itermax)
+    max_dv = len(lmbda)
+    max_dc = len(rho)
+
+    while ll < itermax and pe_curr > pe_th:
+
+        pe_res[ll] = pe_curr
+        ll = ll + 1
+
+        pc_aver = np.zeros(len(pc_0))
+        for idx in range(1, max_dc):
+            if rho[idx] != 0:
+                pc = cn_update(m_sup, pv_aver, idx, z_sup)
+                pc_aver = pc_aver + rho[idx] * pc
+
+        pv_aver = np.zeros(len(pc_0))
+        for idx in range(1, max_dv):
+            if lmbda[idx] != 0:
+                pv = vn_update(pc_0, pc_aver, idx, m_sup, m_sup)
+                pv_aver = pv_aver + lmbda[idx] * pv
+
+        pe_curr = pv_aver[:int(round((m_sup[2] - 1) / 2 + 1))].sum() * m_inc
+        print(pe_curr)
+
+    return pe_res
 
 
 def ch_msg(m_sup, sigma):

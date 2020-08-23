@@ -1,3 +1,4 @@
 # how to update an environment with a yml file
 conda env update --file env_opt_comms.yml  --prune
 # need to figure out how to set up environment with the yml file
+conda env create -f env_opt_comms.yml
