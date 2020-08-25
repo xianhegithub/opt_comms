@@ -1,6 +1,5 @@
 name: opt_comms
 channels:
-  - conda-forge
   - defaults
 dependencies:
   - python = 3.6
@@ -8,4 +7,3 @@ dependencies:
   - matplotlib = 3.2.2
   - scipy = 1.5.0
   - mkl_fft = 1.1.0
-  - pyfftw = 0.12.0

@@ -12,9 +12,9 @@ Pe_th = 1e-6
 on_remote = 1
 
 dv = 3
-dc = 4
+dc = 6
 ll = 0
-sigma = 1.267
+sigma = 0.5
 m_sup = [-30, 30, 6001]
 z_sup = [-10, -2e-4, 50000]
 
