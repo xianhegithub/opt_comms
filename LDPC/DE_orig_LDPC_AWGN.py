@@ -226,7 +226,7 @@ def phi_trans_inv(pomg_pos, pomg_neg, p_res_zero, z_extn_sup, m_sup):
     return pm_update, ofl_pos, ofl_neg
 
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
 
     itmax = len(z_non_grid[0])
