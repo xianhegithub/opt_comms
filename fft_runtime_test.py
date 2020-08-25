@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 sig = np.random.random(2**18) + np.random.random(2**18) * 1j
 
 
-
 start = timer()
 for i in range(100):
     mkl_fft.fft(sig)

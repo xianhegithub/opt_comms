@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats
 from scipy.special import comb
 import mkl_fft
+from numba import jit
 """
 This is a set of functions that calculate the original density evolution for regular and 
 irregular LDPC code in AWGN channel.
@@ -225,70 +226,74 @@ def phi_trans_inv(pomg_pos, pomg_neg, p_res_zero, z_extn_sup, m_sup):
     return pm_update, ofl_pos, ofl_neg
 
 
+#@jit(nopython=True)
 def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
 
     itmax = len(z_non_grid[0])
-    pzi = np.zeros(z_sup[2])
+    z_ele_num = z_sup[2]
+    pzi = np.zeros(z_ele_num)
     ofl = 0.
     ufl = 0.
-    z_inc = (z_sup[1] - z_sup[0])/(z_sup[2] - 1)
+    z_inc = (z_sup[1] - z_sup[0])/(z_ele_num - 1)
     min_res_bin = z_sup[0] - 0.5 * z_inc
     max_res_bin = z_sup[1] + 0.5 * z_inc
     for cc in range(itmax):
-        z_in_z_uni = np.array((z_non_grid[:, cc] - z_sup[0]) / z_inc + 0.5, dtype=int)
+        ztmp = (z_non_grid[:, cc] - z_sup[0]) / z_inc + 0.5
+        z_in_z_uni_head = int(ztmp[0])
+        z_in_z_uni_tail = int(ztmp[1])
         flag = 0
         partflag = 0
         # higher range exceeded by both, this part of pv is added into ofl
-        if z_in_z_uni[0] > z_sup[2]-1 and z_in_z_uni[1] > z_sup[2]-1:
+        if z_in_z_uni_head > z_ele_num-1 and z_in_z_uni_tail > z_ele_num-1:
             ofl = ofl + pv_half[cc] * m_inc
             flag = 1
         # lower range exceeded by both, this part of pv is added into ufl
-        if z_in_z_uni[0] < 0 and z_in_z_uni[1] < 0:
+        if z_in_z_uni_head < 0 and z_in_z_uni_tail < 0:
             ufl = ufl + pv_half[cc] * m_inc
             flag = 1
         # lower range exceeded only in one part
-        if flag == 0 and z_in_z_uni[0] < 0:
-            z_in_z_uni[0] = 0
+        if flag == 0 and z_in_z_uni_head < 0:
+            z_in_z_uni_head = 0
             z_non_grid[0, cc] = min_res_bin
             partflag = 1
         # higher range exceeded by a single index. Special care needs to be taken to deal with the value inf in Python
-        if flag == 0 and (z_in_z_uni[1] >= z_sup[2] or z_in_z_uni[1] == np.iinfo(np.int64).min):
-            z_in_z_uni[1] = z_sup[2] - 1
+        if flag == 0 and (z_in_z_uni_tail >= z_ele_num or z_in_z_uni_tail == np.iinfo(np.int64).min):
+            z_in_z_uni_tail = z_ele_num - 1
             z_non_grid[1, cc] = max_res_bin
             partflag = 1
         if flag == 0:
-            if z_in_z_uni[0] == z_in_z_uni[1]:
+            if z_in_z_uni_head == z_in_z_uni_tail:
                 tmp = pv_half[cc] * m_inc/z_inc
-                pzi[z_in_z_uni[0]] = pzi[z_in_z_uni[0]] + tmp
-            elif z_in_z_uni[1]-z_in_z_uni[0] == 1:
+                pzi[z_in_z_uni_head] = pzi[z_in_z_uni_head] + tmp
+            elif z_in_z_uni_tail-z_in_z_uni_head == 1:
                 # find the fractional probabilities associated with each bin
                 # the bin boundary is (obviously) halfway between round(2) and round(1)
-                bdy = (z_in_z_uni[0] + 0.5) * z_inc + z_sup[0]
+                bdy = (z_in_z_uni_head + 0.5) * z_inc + z_sup[0]
                 lowfrac = abs(z_non_grid[0, cc] - bdy) / z_inc
                 highfrac = abs(z_non_grid[1, cc] - bdy) / z_inc
-                tmp = np.multiply([lowfrac, highfrac], pv_half[cc])
-                tmp = np.multiply(tmp, [coeff[z_in_z_uni[0]], coeff[z_in_z_uni[1]]])
-                pzi[z_in_z_uni[0]: z_in_z_uni[1]+1] = pzi[z_in_z_uni[0]: z_in_z_uni[1]+1] + tmp
+                tmp = np.array([lowfrac, highfrac]) * pv_half[cc]
+                tmp = tmp * np.array([coeff[z_in_z_uni_head], coeff[z_in_z_uni_tail]])
+                pzi[z_in_z_uni_head: z_in_z_uni_tail+1] = pzi[z_in_z_uni_head: z_in_z_uni_tail+1] + tmp
             else:
                 # find the fractional probabilities associated with the end bins
                 # then the probabilities associated with the intervening bins
-                lowbdy = (z_in_z_uni[0] + 0.5) * z_inc + z_sup[0]
-                highbdy = (z_in_z_uni[1] - 0.5) * z_inc + z_sup[0]
+                lowbdy = (z_in_z_uni_head + 0.5) * z_inc + z_sup[0]
+                highbdy = (z_in_z_uni_tail - 0.5) * z_inc + z_sup[0]
                 lowfrac = abs(z_non_grid[0, cc] - lowbdy) / z_inc
                 highfrac = abs(z_non_grid[1, cc] - highbdy) / z_inc
-                tmp = np.zeros(z_in_z_uni[1] - z_in_z_uni[0] + 1)
+                tmp = np.zeros(z_in_z_uni_tail - z_in_z_uni_head + 1)
                 tmp[0] = lowfrac * pv_half[cc]
                 tmp[-1] = highfrac * pv_half[cc]
                 tmp[1: -1] = pv_half[cc]
-                tmp = tmp * coeff[z_in_z_uni[0]:z_in_z_uni[1]+1]
-                pzi[z_in_z_uni[0]: z_in_z_uni[1]+1] = pzi[z_in_z_uni[0]: z_in_z_uni[1]+1] + tmp
+                tmp = tmp * coeff[z_in_z_uni_head:z_in_z_uni_tail+1]
+                pzi[z_in_z_uni_head: z_in_z_uni_tail+1] = pzi[z_in_z_uni_head: z_in_z_uni_tail+1] + tmp
 
         if partflag == 1:
             # part of the probability lies outside of the range
             # calculate how much is accounted for; rest is overflow
             pprob = tmp.sum() * z_inc
             if pprob < pv_half[cc] * m_inc:
-                if z_in_z_uni[0] < 0:  # underflow
+                if z_in_z_uni_head < 0:  # underflow
                     ufl = ufl + (pv_half[cc] * m_inc - pprob)
                 else:
                     ofl = ofl + (pv_half[cc] * m_inc - pprob)
