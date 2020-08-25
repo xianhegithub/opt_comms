@@ -14,7 +14,7 @@ on_remote = 1
 dv = 3
 dc = 6
 ll = 0
-sigma = 0.5
+sigma = 0.88
 m_sup = np.array([-30, 30, 6001])
 z_sup = np.array([-10, -2e-4, 50000])
 

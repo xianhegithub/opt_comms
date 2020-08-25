@@ -226,7 +226,7 @@ def phi_trans_inv(pomg_pos, pomg_neg, p_res_zero, z_extn_sup, m_sup):
     return pm_update, ofl_pos, ofl_neg
 
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
 
     itmax = len(z_non_grid[0])
@@ -263,8 +263,9 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
             partflag = 1
         if flag == 0:
             if z_in_z_uni_head == z_in_z_uni_tail:
-                tmp = pv_half[cc] * m_inc/z_inc
-                pzi[z_in_z_uni_head] += tmp
+                tmp = np.zeros(2)  # this is for the numba jit to work
+                tmp[0] = pv_half[cc] * m_inc/z_inc
+                pzi[z_in_z_uni_head] += tmp[0]
             elif z_in_z_uni_tail-z_in_z_uni_head == 1:
                 # find the fractional probabilities associated with each bin
                 # the bin boundary is (obviously) halfway between round(2) and round(1)
@@ -272,7 +273,7 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
                 lowfrac = abs(z_non_grid[0, cc] - bdy) / z_inc
                 highfrac = abs(z_non_grid[1, cc] - bdy) / z_inc
                 tmp = np.array([lowfrac, highfrac]) * pv_half[cc]
-                tmp = tmp * np.array([coeff[z_in_z_uni_head], coeff[z_in_z_uni_tail]])
+                tmp *= np.array([coeff[z_in_z_uni_head], coeff[z_in_z_uni_tail]])
                 pzi[z_in_z_uni_head: z_in_z_uni_tail+1] += tmp
             else:
                 # find the fractional probabilities associated with the end bins
@@ -285,13 +286,13 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
                 tmp[0] = lowfrac * pv_half[cc]
                 tmp[-1] = highfrac * pv_half[cc]
                 tmp[1: -1] = pv_half[cc]
-                tmp = tmp * coeff[z_in_z_uni_head:z_in_z_uni_tail+1]
+                tmp *= coeff[z_in_z_uni_head:z_in_z_uni_tail+1]
                 pzi[z_in_z_uni_head: z_in_z_uni_tail+1] += tmp
 
         if partflag == 1:
             # part of the probability lies outside of the range
             # calculate how much is accounted for; rest is overflow
-            pprob = tmp.sum() * z_inc
+            pprob = np.sum(tmp) * z_inc
             if pprob < pv_half[cc] * m_inc:
                 if z_in_z_uni_head < 0:  # underflow
                     ufl += pv_half[cc] * m_inc - pprob
