@@ -142,7 +142,7 @@ def phi_trans(m_sup, pv, z_sup):
     Ref. [1] Channel Codes classical and modern - - William E.Ryan and Shu Lin Algorithm 9.1 step 3, sub-step 1
     """
 
-    z_uni_grid = np.linspace(z_sup[0], z_sup[1], z_sup[2])
+    z_uni_grid = np.linspace(z_sup[0], z_sup[1], int(z_sup[2]))
 
     m_inc = (m_sup[1] - m_sup[0])/(m_sup[2] - 1)
     lw_up_grid = np.zeros([2, int((m_sup[2]-1)/2)])
@@ -192,17 +192,17 @@ def phi_trans_inv(pomg_pos, pomg_neg, p_res_zero, z_extn_sup, m_sup):
     m_pos_min = m_inc
     m_pos_num = int((m_sup[2] - 1)/2)
     m_pos_max = m_pos_min + m_inc * (m_pos_num - 1)
-    m_pos_sup = [m_pos_min, m_pos_max, m_pos_num]
-    m_pos_grid = np.linspace(m_pos_min, m_pos_max, m_pos_num)
+    m_pos_sup = np.array([m_pos_min, m_pos_max, m_pos_num])
+    m_pos_grid = np.linspace(m_pos_min, m_pos_max, int(m_pos_num))
 
     z_extn_inc = (z_extn_sup[1] - z_extn_sup[0]) / (z_extn_sup[2] - 1)
-    lw_up_grid = np.zeros([2, z_extn_sup[2]])
+    lw_up_grid = np.zeros([2, int(z_extn_sup[2])])
     tmp_min = z_extn_sup[0] - z_extn_inc / 2
     tmp_max = z_extn_sup[0] - z_extn_inc / 2 + z_extn_inc * (z_extn_sup[2] - 1)
-    lw_up_grid[0, :] = np.linspace(tmp_min, tmp_max, z_extn_sup[2])
+    lw_up_grid[0, :] = np.linspace(tmp_min, tmp_max, int(z_extn_sup[2]))
     tmp_min = z_extn_sup[0] + z_extn_inc / 2
     tmp_max = z_extn_sup[0] + z_extn_inc / 2 + z_extn_inc * (z_extn_sup[2] - 1)
-    lw_up_grid[1, :] = np.linspace(tmp_min, tmp_max, z_extn_sup[2])
+    lw_up_grid[1, :] = np.linspace(tmp_min, tmp_max, int(z_extn_sup[2]))
     lw_up_grid[0, 0] = z_extn_sup[0]
     tmp = z_extn_sup[0] + z_extn_inc * (z_extn_sup[2] - 1)
     if tmp == 0:
@@ -230,7 +230,7 @@ def phi_trans_inv(pomg_pos, pomg_neg, p_res_zero, z_extn_sup, m_sup):
 def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
 
     itmax = len(z_non_grid[0])
-    z_ele_num = z_sup[2]
+    z_ele_num = int(z_sup[2])
     pzi = np.zeros(z_ele_num)
     ofl = 0.
     ufl = 0.
@@ -245,11 +245,11 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
         partflag = 0
         # higher range exceeded by both, this part of pv is added into ofl
         if z_in_z_uni_head > z_ele_num-1 and z_in_z_uni_tail > z_ele_num-1:
-            ofl = ofl + pv_half[cc] * m_inc
+            ofl += pv_half[cc] * m_inc
             flag = 1
         # lower range exceeded by both, this part of pv is added into ufl
         if z_in_z_uni_head < 0 and z_in_z_uni_tail < 0:
-            ufl = ufl + pv_half[cc] * m_inc
+            ufl += pv_half[cc] * m_inc
             flag = 1
         # lower range exceeded only in one part
         if flag == 0 and z_in_z_uni_head < 0:
@@ -264,7 +264,7 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
         if flag == 0:
             if z_in_z_uni_head == z_in_z_uni_tail:
                 tmp = pv_half[cc] * m_inc/z_inc
-                pzi[z_in_z_uni_head] = pzi[z_in_z_uni_head] + tmp
+                pzi[z_in_z_uni_head] += tmp
             elif z_in_z_uni_tail-z_in_z_uni_head == 1:
                 # find the fractional probabilities associated with each bin
                 # the bin boundary is (obviously) halfway between round(2) and round(1)
@@ -273,7 +273,7 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
                 highfrac = abs(z_non_grid[1, cc] - bdy) / z_inc
                 tmp = np.array([lowfrac, highfrac]) * pv_half[cc]
                 tmp = tmp * np.array([coeff[z_in_z_uni_head], coeff[z_in_z_uni_tail]])
-                pzi[z_in_z_uni_head: z_in_z_uni_tail+1] = pzi[z_in_z_uni_head: z_in_z_uni_tail+1] + tmp
+                pzi[z_in_z_uni_head: z_in_z_uni_tail+1] += tmp
             else:
                 # find the fractional probabilities associated with the end bins
                 # then the probabilities associated with the intervening bins
@@ -286,7 +286,7 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
                 tmp[-1] = highfrac * pv_half[cc]
                 tmp[1: -1] = pv_half[cc]
                 tmp = tmp * coeff[z_in_z_uni_head:z_in_z_uni_tail+1]
-                pzi[z_in_z_uni_head: z_in_z_uni_tail+1] = pzi[z_in_z_uni_head: z_in_z_uni_tail+1] + tmp
+                pzi[z_in_z_uni_head: z_in_z_uni_tail+1] += tmp
 
         if partflag == 1:
             # part of the probability lies outside of the range
@@ -294,9 +294,9 @@ def pm2pz2pm(m_inc, pv_half, z_non_grid, z_sup, coeff):
             pprob = tmp.sum() * z_inc
             if pprob < pv_half[cc] * m_inc:
                 if z_in_z_uni_head < 0:  # underflow
-                    ufl = ufl + (pv_half[cc] * m_inc - pprob)
+                    ufl += pv_half[cc] * m_inc - pprob
                 else:
-                    ofl = ofl + (pv_half[cc] * m_inc - pprob)
+                    ofl += pv_half[cc] * m_inc - pprob
 
     return pzi, ofl, ufl
 
