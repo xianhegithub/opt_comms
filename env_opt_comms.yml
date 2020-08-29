@@ -11,3 +11,4 @@ dependencies:
   - pip
   - pip:
     - bchlib == 0.14.0
+    - komm == 0.7.1
